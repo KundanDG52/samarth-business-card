@@ -387,7 +387,13 @@ function Kadli({ position }) {
 /* ─── Business Card ──────────────────────────────────────── */
 function BusinessCard() {
   const groupRef = useRef();
-  const { mouse } = useThree();
+  const { mouse, viewport } = useThree();
+  /* scale card so it always fits the screen with ~10 % padding */
+  const fitScale = Math.min(
+    1,
+    (viewport.width  * 0.88) / 3.5,
+    (viewport.height * 0.80) / 2.0,
+  );
   const [hovered, setHovered] = useState(false);
   const introReady = useRef(false);
 
@@ -476,6 +482,7 @@ function BusinessCard() {
   }
 
   return (
+    <group scale={fitScale}>
     <group
       ref={groupRef}
       onPointerDown={onPointerDown}
@@ -500,11 +507,20 @@ function BusinessCard() {
         <meshStandardMaterial map={texture} metalness={0.1} roughness={0.35} />
       </mesh>
     </group>
+    </group>
   );
 }
 
 /* ─── Scene ──────────────────────────────────────────────── */
 function Scene() {
+  const { viewport } = useThree();
+  /* viewport-relative jewelry: 40 % of half-width, 32 % of half-height */
+  const jx = viewport.width  * 0.40;
+  const jy = viewport.height * 0.32;
+  /* hide jewelry when the screen is too narrow (portrait phone) */
+  const showJewelry = viewport.width > 4.2;
+  const starCount   = viewport.width < 4 ? 240 : 520;
+
   return (
     <>
       <color attach="background" args={[BG]} />
@@ -515,15 +531,18 @@ function Scene() {
       <pointLight position={[0, -1, 3]} intensity={0.5} color={SILVER_LT} />
       <pointLight position={[0, 0, -4]} intensity={0.4} color="#9090b8" />
 
-      <TwinklingStars count={520} />
+      <TwinklingStars count={starCount} />
       <Galaxy />
       <NebulaDust />
 
-      {/* jewelry corners */}
-      <Ring position={[-2.95, 1.1, -0.5]} />
-      <Payal position={[2.95, 1.1, -0.5]} />
-      <Kada position={[-2.95, -1.1, -0.5]} />
-      <Kadli position={[2.95, -1.1, -0.5]} />
+      {showJewelry && (
+        <>
+          <Ring  position={[-jx,  jy, -0.5]} />
+          <Payal position={[ jx,  jy, -0.5]} />
+          <Kada  position={[-jx, -jy, -0.5]} />
+          <Kadli position={[ jx, -jy, -0.5]} />
+        </>
+      )}
 
       <BusinessCard />
 
@@ -543,9 +562,9 @@ function HUD() {
         bottom: 22,
         left: "50%",
         transform: "translateX(-50%)",
-        color: "#444",
-        fontSize: 11,
-        letterSpacing: "0.16em",
+        color: "#555",
+        fontSize: "clamp(10px, 2.5vw, 13px)",
+        letterSpacing: "0.14em",
         fontFamily: "sans-serif",
         textTransform: "uppercase",
         pointerEvents: "none",
@@ -564,7 +583,7 @@ export default function App() {
     <div
       style={{
         width: "100vw",
-        height: "100vh",
+        height: "100dvh",
         background: BG,
         position: "relative",
       }}
